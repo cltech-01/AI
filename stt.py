@@ -300,7 +300,7 @@ def save_transcription_results(audio_path, result, username=None):
 if __name__ == "__main__":
     # 오디오 파일 처리 시작
     process_audio(
-        audio_path="./Data/Sound/jhkim/01.wav",
+        audio_path="./reference/example.wav",
         model_name="small",
         parallel_threshold_mb=50,
         chunk_duration=120,

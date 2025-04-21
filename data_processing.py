@@ -109,4 +109,4 @@ def clean_text(file_path: str, use_nlp: bool = False) -> str:
     return output_path
 
 if __name__ == "__main__":
-    clean_text("./Data/Text/jhkim/03.txt", use_nlp=True)
+    clean_text("./reference/cleaned_example.txt", use_nlp=True)

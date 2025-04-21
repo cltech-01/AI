@@ -41,6 +41,7 @@ konlpy==0.6.0
 langchain==0.3.23
 langchain-community==0.3.21
 langchain-core==0.3.54
+langchain-openai==0.3.14
 langchain-text-splitters==0.3.8
 langsmith==0.3.32
 llvmlite==0.44.0
@@ -54,7 +55,7 @@ mypy-extensions==1.0.0
 networkx==3.4.2
 numba==0.61.2
 numpy==2.2.5
-openai==1.55.3
+openai==1.75.0
 openai-whisper==20240930
 orjson==3.10.16
 packaging==24.2

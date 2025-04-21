@@ -91,6 +91,6 @@ def vector_embedding(text_path: str, username: str, openai_api_key: str = None):
 
 
 if __name__ == "__main__":
-    print(vector_embedding("./Data/Text/jhkim/01_transcript.txt", "jhkim"))
+    print(vector_embedding("./reference/cleaned_example.txt", "jhkim"))
     # docs = chunk_text_to_documents("./Data/Sound/jhkim/01_transcript.txt")
     # print(docs)
