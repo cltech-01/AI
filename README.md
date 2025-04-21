@@ -2,6 +2,15 @@
 Python 3.11.8
 파이썬 가상환경
 
+```
+일단 파이썬 요기 디렉토리만 가상환경 3.11.8 로 세팅하는법..
+brew install pyenv
+echo 'eval "$(pyenv init --path)"' >> ~/.zprofile
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+pyenv install 3.11.8
+pyenv local 3.11.8
+```
+
 ###  1. 가상환경 생성
  - python -m venv venv
 
