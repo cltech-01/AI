@@ -1,29 +1,32 @@
-# FastAPI Demo
+## 요구사항
+Python 3.11.8
+파이썬 가상환경
+````
+# 가상환경 생성
+python -m venv venv
 
-A simple FastAPI application with basic CRUD operations.
+# 가상환경 활성화 (Windows)
+venv\Scripts\activate
 
-## 설치 방법
+# 가상환경 활성화 (macOS/Linux)
+source venv/bin/activate
 
-1. 필요한 패키지 설치하기:
-```
 pip install -r requirements.txt
-```
 
-## 실행 방법
-
-1. 서버 실행하기:
-```
+API 서버 실행 
 python main.py
 ```
 
-2. 또는 uvicorn으로 직접 실행:
+env 파일 링크 : 
+
 ```
-uvicorn main:app --reload
+
+UPLOAD_DIR=./Data/Media
+BACKEND_URL=http://localhost:8080
+HOST=0.0.0.0
+PORT=8000
+RELOAD=True
+OPENAI_API_KEY=[노션](https://www.notion.so/dong2ast/Secret-1d98d4c0362780bfb9d1d757bf3df23f)
+WHISPER_MODEL_NAME=small
 ```
 
-## API 문서
-
-서버가 실행되면 아래 URL에서 자동 생성된 API 문서를 확인할 수 있습니다:
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc 
