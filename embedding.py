@@ -35,17 +35,21 @@ qdrant_client = QdrantClient("localhost", port=6333)
 
 qdrant_client.recreate_collection(
     collection_name="meeting_summaries",
-    vectors_config=VectorParams(
+    vectors_config=models.VectorParams(
         size=3072,
-        distance=Distance.COSINE
+        distance=models.Distance.COSINE,
+    ),
+    hnsw_config=models.HnswConfigDiff(
+        m=32,
+        ef_construct=128,
     ),
     quantization_config=models.ScalarQuantization(
-                                   scalar=models.ScalarQuantizationConfig(
-                                       type=models.ScalarType.INT8,
-                                       quantile=0.99,
-                                       always_ram=True,
-                                   )
-                               ),
+        scalar=models.ScalarQuantizationConfig(
+            type=models.ScalarType.INT8,
+            quantile=0.99,
+            always_ram=True,
+        )
+    )
 )
 
 vector_store = QdrantVectorStore(
