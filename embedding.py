@@ -38,6 +38,7 @@ qdrant_client.recreate_collection(
     vectors_config=models.VectorParams(
         size=3072,
         distance=models.Distance.COSINE,
+        on_disk=True
     ),
     hnsw_config=models.HnswConfigDiff(
         m=32,
