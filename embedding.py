@@ -6,9 +6,37 @@ from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from azure.core.credentials import AzureKeyCredential
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+from qdrant_client import QdrantClient
+from qdrant_client.models import PointStruct, Distance, VectorParams
+import uuid
+from openai import AzureOpenAI
+import os
+from dotenv import load_dotenv
 
 
 load_dotenv()
+
+app = FastAPI(title="Vector Search API")
+
+endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+model_name = "text-embedding-3-large"
+deployment = "text-embedding-3-large"
+
+api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+
+# Azure OpenAI 클라이언트 설정
+client = AzureOpenAI(
+    api_version="2024-12-01-preview",
+    base_url= endpoint,
+    api_key=os.getenv("AZURE_OPENAI_API_KEY")
+)
+
+# Qdrant 클라이언트 설정
+qdrant_client = QdrantClient("localhost", port=6333)
 
 ### Text 파일을 Chunking 한 후 Document List 로 분리합니다. 
 def chunk_text_to_documents(text_path: str, chunk_size: int = 1000, chunk_overlap: int = 50) -> list:
@@ -87,7 +115,90 @@ def vector_embedding(text_path: str, username: str, openai_api_key: str = None):
     return vectorstore
 
 
+class Document(BaseModel):
+    title: str
+    department: str
+    keywords: List[str]
+    content: str
 
+class SearchQuery(BaseModel):
+    query: str
+    department: Optional[str] = None
+    limit: int = 5
+
+def get_embedding(text: str) -> List[float]:
+    """Azure OpenAI API를 사용하여 텍스트의 임베딩을 생성합니다."""
+    response = client.embeddings.create(
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+        input=text
+    )
+    return response.data[0].embedding
+
+@app.post("/documents")
+async def create_document(document: Document):
+    """문서를 벡터 DB에 저장합니다."""
+    try:
+        # 문서 내용의 임베딩 생성
+        embedding = get_embedding(document.content)
+        
+        # Qdrant에 문서 저장
+        qdrant_client.upsert(
+            collection_name="meeting_summaries",
+            points=[
+                PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector=embedding,
+                    payload={
+                        "title": document.title,
+                        "department": document.department,
+                        "keywords": document.keywords,
+                        "content": document.content
+                    }
+                )
+            ]
+        )
+        return {"status": "success", "message": "문서가 성공적으로 저장되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/search")
+async def search_documents(query: SearchQuery):
+    """문서를 검색합니다."""
+    try:
+        # 쿼리 텍스트의 임베딩 생성
+        query_vector = get_embedding(query.query)
+        
+        # Qdrant에서 검색 실행
+        results = qdrant_client.search(
+            collection_name="meeting_summaries",
+            query_vector=query_vector,
+            limit=query.limit,
+            with_payload=True
+        )
+        
+        return [{
+            "score": hit.score,
+            "title": hit.payload["title"],
+            "department": hit.payload["department"],
+            "keywords": hit.payload["keywords"],
+            "content": hit.payload["content"]
+        } for hit in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    """서버 시작 시 Qdrant 컬렉션을 초기화합니다."""
+    try:
+        qdrant_client.recreate_collection(
+            collection_name="meeting_summaries",
+            vectors_config=VectorParams(
+                size=3072,  # text-embedding-3-large 벡터 크기
+                distance=Distance.COSINE
+            )
+        )
+    except Exception as e:
+        print(f"컬렉션 초기화 중 오류 발생: {e}") 
 
 
 if __name__ == "__main__":
