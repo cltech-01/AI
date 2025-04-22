@@ -6,7 +6,7 @@ from langchain_core.documents import Document
 from langchain_openai import AzureOpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import PointStruct, Distance, VectorParams
 from azure.core.credentials import AzureKeyCredential
 from fastapi import FastAPI, HTTPException
@@ -23,14 +23,6 @@ AZURE_DEPLOY   = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 AZURE_VERSION  = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 
 # ─── 클라이언트 초기화 ─────────────────────────────────────────────────────────
-# Azure OpenAI 클라이언트 설정
-# client = AzureOpenAI(
-#     api_version=AZURE_VERSION,
-#     base_url= AZURE_ENDPOINT,
-#     api_key=AZURE_KEY
-# )
-
-# LangChain Azure Embeddings
 embeddings = AzureOpenAIEmbeddings(
     model = AZURE_DEPLOY,
     openai_api_version=AZURE_VERSION,  # 필요 시 적절한 버전으로 교체
@@ -46,13 +38,20 @@ qdrant_client.recreate_collection(
     vectors_config=VectorParams(
         size=3072,
         distance=Distance.COSINE
-    )
+    ),
+    quantization_config=models.ScalarQuantization(
+                                   scalar=models.ScalarQuantizationConfig(
+                                       type=models.ScalarType.INT8,
+                                       quantile=0.99,
+                                       always_ram=True,
+                                   )
+                               ),
 )
 
 vector_store = QdrantVectorStore(
     client=qdrant_client,
     collection_name="meeting_summaries",
-    embedding=embeddings,
+    embedding=embeddings
 )
 
 ### Text 파일을 Chunking 한 후 Document List 로 분리합니다.

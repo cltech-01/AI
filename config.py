@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_VERSION: str
     AZURE_OPENAI_DEPLOYMENT_NAME: str
 
+    OPENAI_API_KEY: str
+
     # 기타
     API_URL: str
 
