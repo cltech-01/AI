@@ -107,11 +107,6 @@ def vector_embedding(text_path: str, username: str, openai_api_key: str = None):
     Returns:
         생성된 벡터스토어 경로
     """
-    # API 키 설정
-    if openai_api_key:
-        os.environ["OPENAI_API_KEY"] = openai_api_key
-    elif "OPENAI_API_KEY" not in os.environ:
-        raise ValueError("OpenAI API 키가 필요합니다. 환경변수 또는 매개변수로 제공해주세요.")
 
     # 텍스트 파일 청킹 및 Document 생성
     print(f'🔄 텍스트 파일 청킹 시작: {text_path} ')
