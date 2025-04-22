@@ -43,5 +43,8 @@ WHISPER_MODEL_NAME=small
 - python main.py
 
 
+** Unit Test 하는법
+- python rag.py
+- python embedding.py 
 
 
