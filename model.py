@@ -17,3 +17,4 @@ class State(TypedDict):
     chunks: list[str]
     documents: list
     status: str
+    lecture_uuid: str

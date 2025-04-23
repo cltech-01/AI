@@ -10,21 +10,12 @@ from backend_api import create_backend_entity, notify_backend
 from data_processing import extract_audio_from_video, clean_text
 from chat import router as chat_router
 from video_stream import router as video_stream_router
-from fastapi.middleware.cors import CORSMiddleware
+from data_processing import compress_video_to_h264
 
 
 
 settings = Settings()
 app = FastAPI()
-
-# 앱 생성 후 CORS 미들웨어 추가 (app = FastAPI() 코드 다음에 추가)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # 모든 출처 허용
-    allow_credentials=True,
-    allow_methods=["*"],  # 모든 메서드 허용
-    allow_headers=["*"],  # 모든 헤더 허용
-)
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
@@ -40,6 +31,8 @@ def process_video_background(save_path, user_key, random_name, filename):
         notify_backend(lecture_id, "오디오 추출중")
         audio_path = extract_audio_from_video(save_path, user_key, random_name)
         
+        ## ffmpeg으로 hev로 영상 압축후 기존 영상 대체 
+        save_path = compress_video_to_h264(save_path)
         # 3. 오디오 stt로 변환 
         notify_backend(lecture_id, "오디오 stt 변환중")
         _, text_path = process_audio(audio_path, settings.WHISPER_MODEL_NAME, user_key)
@@ -50,7 +43,7 @@ def process_video_background(save_path, user_key, random_name, filename):
 
         # 5. Text 파일 vector Embedding 시작 
         notify_backend(lecture_id, "Text 파일 vector Embedding 시작")
-        store_data(cleaned_text_path, user_key)
+        store_data(cleaned_text_path, user_key, lecture_id)
 
         notify_backend(lecture_id, "완료")
     except Exception as e:

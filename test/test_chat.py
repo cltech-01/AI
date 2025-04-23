@@ -5,12 +5,12 @@ import sys
 
 def test_chat_streaming():
     # API 엔드포인트 URL
-    url = "http://localhost:8000/chat"
+    url = "http://localhost:8001/chat"
     
     # 테스트 요청 데이터
     data = {
         "userId": "jhkim",
-        "message": "DevOps팀에서 사용하는 도구에 대해서 알려줘",
+        "message": "이 강의는 어떤 내용을 다루나요?",
         "lectureId": None,
         "conversationId": None
     }
@@ -35,37 +35,42 @@ def test_chat_streaming():
             print(response.text)
             return
         
-        # 전체 응답 저장 변수
+        # 응답 변수 초기화
         full_response = ""
         
-        # 버퍼 준비
-        buffer = ""
+        # 타이핑 효과를 위한 변수
+        last_update_time = time.time()
         
-        # 스트리밍 응답 처리 - 라인 단위로 처리
-        for line in response.iter_lines():
-            if not line:
+        # 스트리밍 응답 처리
+        buffer = ""
+        for chunk in response.iter_content(chunk_size=1):
+            if not chunk:
                 continue
                 
-            # 바이트를 문자열로 디코딩 (한 줄씩 읽어 디코딩 문제 해결)
-            line_str = line.decode('utf-8')
+            # 바이트를 문자열로 디코딩
+            chunk_str = chunk.decode('utf-8')
+            buffer += chunk_str
             
-            # data: 접두사로 시작하는 SSE 이벤트 라인 확인
-            if line_str.startswith("data: "):
+            # 완전한 SSE 이벤트 확인
+            if buffer.endswith("\n\n") and buffer.startswith("data: "):
                 # data: 접두사 제거 및 JSON 파싱
                 try:
-                    json_str = line_str[6:]  # 'data: ' 이후의 문자열
+                    json_str = buffer.strip()[6:]
                     event_data = json.loads(json_str)
                     
                     # 이벤트 유형에 따른 처리
                     if event_data.get("type") == "start":
                         print(f"대화 ID: {event_data.get('conversation_id')}")
-                        print("응답: ", end="", flush=True)
+                        print("응답:", end="", flush=True)
                     
                     elif event_data.get("type") == "chunk":
-                        chunk = event_data.get("content", "")
-                        sys.stdout.write(chunk)
-                        sys.stdout.flush()
-                        full_response += chunk
+                        # 타이핑 효과를 위한 딜레이
+                        current_time = time.time()
+                        if current_time - last_update_time > 0.01:
+                            sys.stdout.write(event_data.get("content", ""))
+                            sys.stdout.flush()
+                            last_update_time = current_time
+                            full_response += event_data.get("content", "")
                     
                     elif event_data.get("type") == "sources":
                         sources = event_data.get("sources", [])
@@ -87,7 +92,10 @@ def test_chat_streaming():
                         print(f"\n오류: {event_data.get('message')}")
                 
                 except json.JSONDecodeError as e:
-                    print(f"\nJSON 파싱 오류: {e} - {line_str}")
+                    print(f"\nJSON 파싱 오류: {e} - {buffer}")
+                
+                # 버퍼 초기화
+                buffer = ""
         
         print("\n====== 테스트 완료 ======")
         
