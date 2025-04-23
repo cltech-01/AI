@@ -74,41 +74,6 @@ vector_store = QdrantVectorStore(
     embedding=embeddings
 )
 
-# ### Text 파일을 Chunking 한 후 Document List 로 분리합니다.
-# def chunk_text_to_documents(text_path: str, chunk_size: int = 1000, chunk_overlap: int = 50) -> list:
-#     ext = Path(text_path).suffix
-
-#     try:
-#         with open(text_path, "r", encoding="utf-8") as f:
-#             full_text = f.read()
-#     except Exception as e:
-#         print(f"❌ 텍스트 파일 읽기 실패: {e}")
-#         raise
-
-#     # 텍스트 청킹
-#     text_splitter = RecursiveCharacterTextSplitter(
-#         chunk_size=chunk_size,
-#         chunk_overlap=chunk_overlap
-#     )
-
-#     chunks = text_splitter.split_text(full_text)
-#     print(f"✅ 텍스트 청킹 완료: {len(chunks)}개 청크 생성")
-
-#     # Document 리스트로 변환
-#     source_name = Path(text_path).stem
-#     docs = [
-#         Document(
-#             page_content=chunk,
-#             metadata={
-#                 "source": source_name,
-#                 "chunk_index": i
-#             }
-#         )
-#         for i, chunk in enumerate(chunks)
-#     ]
-
-#     return docs
-
 
 def split_text_for_filtering(state: State):
     text_splitter_for_filtering = RecursiveCharacterTextSplitter(
@@ -123,7 +88,8 @@ def split_text_for_filtering(state: State):
 
 def filter_small_talk(state: State):
     prompt = """
-    다음은 IT 기술 강의입니다. 다음 내용에서 IT 기술과 관련없는 일상적인 대화나 불필요한 감탄사/웃음 등은 제거해주세요. 제거 후 요약하지 말고 원문 그대로 남겨주세요.:
+    다음은 IT 기술 강의입니다. 다음 내용에서 IT 기술과 관련없는 일상적인 대화나 불필요한 감탄사/웃음 등은 제거해주세요. 제거 후 요약하지 말고 원문 그대로 남겨주세요.
+    그리고 문법적 오류나 맞춤법이 안맞는 경우, 사람의 발음대로 text가 추출된 경우가 있으면 이것도 바르게 수정해주세요.:
 
     """
     result = ""
@@ -238,4 +204,4 @@ def store_data(path: str, user_id: int):
 
 
 if __name__ == "__main__":
-    store_data("./reference/cleaned_example.txt", 1)
+    store_data("./reference/prompt_test.txt", 1)
