@@ -10,11 +10,21 @@ from backend_api import create_backend_entity, notify_backend
 from data_processing import extract_audio_from_video, clean_text
 from chat import router as chat_router
 from video_stream import router as video_stream_router
+from fastapi.middleware.cors import CORSMiddleware
 
 
 
 settings = Settings()
 app = FastAPI()
+
+# 앱 생성 후 CORS 미들웨어 추가 (app = FastAPI() 코드 다음에 추가)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 출처 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
+)
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 

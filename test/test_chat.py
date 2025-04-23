@@ -2,7 +2,6 @@ import requests
 import json
 import time
 import sys
-from sseclient import SSEClient
 
 def test_chat_streaming():
     # API 엔드포인트 URL
@@ -10,10 +9,10 @@ def test_chat_streaming():
     
     # 테스트 요청 데이터
     data = {
-        "userId": "jhkim",  # 테스트할 사용자 ID로 변경
-        "message": "이 강의는 어떤 내용을 다루나요?",  # 테스트할 메시지로 변경
-        "lectureId": None,  # 선택적 강의 ID
-        "conversationId": None  # 새 대화 시작
+        "userId": "jhkim",
+        "message": "이 강의는 어떤 내용을 다루나요?",
+        "lectureId": None,
+        "conversationId": None
     }
     
     print("====== 채팅 스트리밍 테스트 시작 ======")
@@ -21,11 +20,8 @@ def test_chat_streaming():
     print(f"질문: {data['message']}")
     print("------------------------------")
     
-    # 스트리밍 요청 시작 (POST 요청이므로 헤더에 Accept: text/event-stream을 추가)
-    # SSEClient는 일반적으로 GET 요청을 위한 것이므로, 여기서는 requests로 POST 요청을 먼저 보내고
-    # 응답의 내용을 한 줄씩 처리하는 방식을 사용
-    
     try:
+        # POST 요청 보내기 - stream=True로 설정하여 스트리밍 응답 받기
         response = requests.post(
             url, 
             json=data,
@@ -39,54 +35,61 @@ def test_chat_streaming():
             print(response.text)
             return
         
-        # 전체 응답 내용
+        # 전체 응답 저장 변수
         full_response = ""
-        sources = []
         
-        # 스트리밍 응답 처리
+        # 버퍼 준비
+        buffer = ""
+        
+        # 스트리밍 응답 처리 - 라인 단위로 처리
         for line in response.iter_lines():
-            if line:
-                # 'data:' 접두사 제거 및 JSON 파싱
-                line = line.decode('utf-8')
-                if line.startswith("data: "):
-                    json_str = line[6:]  # 'data: ' 이후의 문자열
-                    try:
-                        event_data = json.loads(json_str)
-                        
-                        # 이벤트 유형에 따른 처리
-                        if event_data.get("type") == "start":
-                            print(f"대화 ID: {event_data.get('conversation_id')}")
-                            print("응답 시작...")
-                            
-                        elif event_data.get("type") == "chunk":
-                            chunk = event_data.get("content", "")
-                            print(chunk, end="", flush=True)
-                            full_response += chunk
-                            
-                        elif event_data.get("type") == "sources":
-                            sources = event_data.get("sources", [])
-                            
-                        elif event_data.get("type") == "end":
-                            print("\n응답 완료")
-                            
-                        elif event_data.get("type") == "error":
-                            print(f"\n오류: {event_data.get('message')}")
+            if not line:
+                continue
+                
+            # 바이트를 문자열로 디코딩 (한 줄씩 읽어 디코딩 문제 해결)
+            line_str = line.decode('utf-8')
+            
+            # data: 접두사로 시작하는 SSE 이벤트 라인 확인
+            if line_str.startswith("data: "):
+                # data: 접두사 제거 및 JSON 파싱
+                try:
+                    json_str = line_str[6:]  # 'data: ' 이후의 문자열
+                    event_data = json.loads(json_str)
                     
-                    except json.JSONDecodeError:
-                        print(f"JSON 파싱 오류: {json_str}")
+                    # 이벤트 유형에 따른 처리
+                    if event_data.get("type") == "start":
+                        print(f"대화 ID: {event_data.get('conversation_id')}")
+                        print("응답: ", end="", flush=True)
+                    
+                    elif event_data.get("type") == "chunk":
+                        chunk = event_data.get("content", "")
+                        sys.stdout.write(chunk)
+                        sys.stdout.flush()
+                        full_response += chunk
+                    
+                    elif event_data.get("type") == "sources":
+                        sources = event_data.get("sources", [])
+                        print("\n\n----- 참조 문서 -----")
+                        for i, source in enumerate(sources):
+                            content = source.get("content", "")[:100]
+                            if len(source.get("content", "")) > 100:
+                                content += "..."
+                            print(f"[{i+1}] {content}")
+                            
+                            metadata = source.get("metadata", {})
+                            if metadata:
+                                print(f"    메타데이터: {metadata}")
+                    
+                    elif event_data.get("type") == "end":
+                        print("\n응답 완료")
+                        
+                    elif event_data.get("type") == "error":
+                        print(f"\n오류: {event_data.get('message')}")
+                
+                except json.JSONDecodeError as e:
+                    print(f"\nJSON 파싱 오류: {e} - {line_str}")
         
-        # 참조 문서 출력
-        if sources:
-            print("\n----- 참조 문서 -----")
-            for i, source in enumerate(sources):
-                content_preview = source.get("content", "")[:100] + "..." if len(source.get("content", "")) > 100 else source.get("content", "")
-                metadata = source.get("metadata", {})
-                print(f"[{i+1}] {content_preview}")
-                if metadata:
-                    print(f"    메타데이터: {metadata}")
-                print()
-        
-        print("====== 테스트 완료 ======")
+        print("\n====== 테스트 완료 ======")
         
     except requests.RequestException as e:
         print(f"요청 오류: {e}")
