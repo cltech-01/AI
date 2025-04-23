@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # 서버 설정 추가
     HOST: str = "0.0.0.0"  # 모든 네트워크 인터페이스에서 접근 가능
-    PORT: int = 8000
+    PORT: int = 8001
     RELOAD: bool = True
 
     model_config = {  # class Config 대신 model_config 사용

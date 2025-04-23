@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 서버 통합 테스트</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .video-container {
+            margin-top: 15px;
+        }
+        video {
+            width: 100%;
+            border-radius: 4px;
+            background-color: #000;
+            max-height: 400px;
+        }
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            align-self: flex-end;
+            margin-left: auto;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #e5e5ea;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        .sources {
+            margin-top: 15px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .typing-indicator {
+            display: inline-block;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #999;
+            border-radius: 50%;
+            margin-right: 3px;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .flex-container {
+            display: flex;
+            gap: 20px;
+        }
+        .flex-item {
+            flex: 1;
+        }
+        .log {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .progress {
+            margin-top: 10px;
+            width: 100%;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI 서버 통합 테스트</h1>
+    
+    <div class="container">
+        <!-- 파일 업로드 섹션 -->
+        <div class="section">
+            <h2>1. 비디오 업로드 테스트</h2>
+            <div class="form-group">
+                <label for="uploadUserId">사용자 ID</label>
+                <input type="text" id="uploadUserId" value="jhkim" placeholder="사용자 ID를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="videoFile">비디오 파일 선택</label>
+                <input type="file" id="videoFile" accept="video/*">
+            </div>
+            <button id="uploadBtn">업로드</button>
+            <div class="log" id="uploadLog">로그: 파일을 선택하고 업로드 버튼을 클릭하세요.</div>
+            <div id="uploadProgressContainer" style="display: none;">
+                <p>업로드 진행 중...</p>
+                <progress id="uploadProgress" class="progress" value="0" max="100"></progress>
+            </div>
+        </div>
+
+        <!-- 비디오 스트리밍 섹션 -->
+        <div class="section">
+            <h2>2. 비디오 스트리밍 테스트</h2>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="form-group">
+                        <label for="streamUserId">사용자 ID</label>
+                        <input type="text" id="streamUserId" value="jhkim" placeholder="사용자 ID를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="videoId">비디오 ID (UUID)</label>
+                        <input type="text" id="videoId" placeholder="비디오 ID를 입력하세요">
+                    </div>
+                    <div class="button-group">
+                        <button id="loadVideoBtn">비디오 로드</button>
+                        <button id="useLastUploadedBtn">최근 업로드 사용</button>
+                    </div>
+                </div>
+                <div class="flex-item">
+                    <div class="video-container">
+                        <video id="videoPlayer" controls></video>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 채팅 테스트 섹션 -->
+        <div class="section">
+            <h2>3. 채팅 테스트</h2>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="form-group">
+                        <label for="chatUserId">사용자 ID</label>
+                        <input type="text" id="chatUserId" value="jhkim" placeholder="사용자 ID를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="lectureId">강의 ID (선택사항)</label>
+                        <input type="text" id="lectureId" placeholder="강의 ID를 입력하세요">
+                    </div>
+                    <div class="button-group">
+                        <button id="useVideoIdBtn">비디오 ID 사용</button>
+                    </div>
+                </div>
+                <div class="flex-item">
+                    <div class="chat-box" id="chatBox"></div>
+                    <div class="chat-input">
+                        <input type="text" id="message" placeholder="메시지를 입력하세요">
+                        <button id="sendBtn">전송</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sources" id="sources" style="display: none;">
+                <h3>참조 문서</h3>
+                <div id="sourcesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 서버 기본 URL
+            const BASE_URL = 'http://localhost:8001';
+            let lastUploadedVideoId = null;
+            let conversationId = null;
+            
+            // 1. 비디오 업로드 기능
+            document.getElementById('uploadBtn').addEventListener('click', uploadVideo);
+            
+            // 2. 비디오 스트리밍 기능
+            document.getElementById('loadVideoBtn').addEventListener('click', loadVideo);
+            document.getElementById('useLastUploadedBtn').addEventListener('click', useLastUploaded);
+            
+            // 3. 채팅 기능
+            document.getElementById('sendBtn').addEventListener('click', sendChatMessage);
+            document.getElementById('useVideoIdBtn').addEventListener('click', useVideoId);
+            document.getElementById('message').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            
+            // 비디오 업로드 함수
+            async function uploadVideo() {
+                const userId = document.getElementById('uploadUserId').value.trim();
+                const fileInput = document.getElementById('videoFile');
+                const uploadLog = document.getElementById('uploadLog');
+                const progressContainer = document.getElementById('uploadProgressContainer');
+                const progressBar = document.getElementById('uploadProgress');
+                
+                if (!userId) {
+                    uploadLog.textContent = '오류: 사용자 ID를 입력해주세요.';
+                    return;
+                }
+                
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    uploadLog.textContent = '오류: 파일을 선택해주세요.';
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                
+                // FormData 생성
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('userId', userId);
+                
+                try {
+                    uploadLog.textContent = '업로드 시작...';
+                    progressContainer.style.display = 'block';
+                    
+                    // XMLHttpRequest 사용 (진행률 확인을 위해)
+                    const xhr = new XMLHttpRequest();
+                    
+                    xhr.upload.addEventListener('progress', function(e) {
+                        if (e.lengthComputable) {
+                            const percentComplete = (e.loaded / e.total) * 100;
+                            progressBar.value = percentComplete;
+                        }
+                    });
+                    
+                    await new Promise((resolve, reject) => {
+                        xhr.open('POST', `${BASE_URL}/upload`);
+                        
+                        xhr.onload = function() {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve(xhr.response);
+                            } else {
+                                reject(new Error(`HTTP 오류: ${xhr.status}`));
+                            }
+                        };
+                        
+                        xhr.onerror = function() {
+                            reject(new Error('네트워크 오류 발생'));
+                        };
+                        
+                        xhr.send(formData);
+                    });
+                    
+                    const response = JSON.parse(xhr.response);
+                    
+                    if (response.status === 'success') {
+                        lastUploadedVideoId = response.video_id;
+                        uploadLog.textContent = `업로드 성공! 비디오 ID: ${lastUploadedVideoId}`;
+                        
+                        // 자동으로 비디오 ID 필드 업데이트
+                        document.getElementById('videoId').value = lastUploadedVideoId;
+                    } else {
+                        uploadLog.textContent = `업로드 실패: ${response.message}`;
+                    }
+                } catch (error) {
+                    uploadLog.textContent = `오류 발생: ${error.message}`;
+                } finally {
+                    progressContainer.style.display = 'none';
+                }
+            }
+            
+            // 비디오 로드 함수
+            function loadVideo() {
+                const userId = document.getElementById('streamUserId').value.trim();
+                const videoId = document.getElementById('videoId').value.trim();
+                
+                if (!userId || !videoId) {
+                    alert('사용자 ID와 비디오 ID를 모두 입력해주세요.');
+                    return;
+                }
+                
+                const videoUrl = `${BASE_URL}/stream/${userId}/${videoId}`;
+                const videoPlayer = document.getElementById('videoPlayer');
+                videoPlayer.src = videoUrl;
+                videoPlayer.load();
+            }
+            
+            // 최근 업로드된 비디오 ID 사용
+            function useLastUploaded() {
+                if (lastUploadedVideoId) {
+                    document.getElementById('videoId').value = lastUploadedVideoId;
+                    document.getElementById('streamUserId').value = document.getElementById('uploadUserId').value;
+                } else {
+                    alert('먼저 비디오를 업로드해주세요.');
+                }
+            }
+            
+            // 비디오 ID를 강의 ID로 사용
+            function useVideoId() {
+                const videoId = document.getElementById('videoId').value.trim();
+                if (videoId) {
+                    document.getElementById('lectureId').value = videoId;
+                    document.getElementById('chatUserId').value = document.getElementById('streamUserId').value;
+                } else {
+                    alert('먼저 비디오 ID를 입력해주세요.');
+                }
+            }
+            
+            // 채팅 메시지 전송 함수
+            async function sendChatMessage() {
+                const userId = document.getElementById('chatUserId').value.trim();
+                const message = document.getElementById('message').value.trim();
+                const lectureId = document.getElementById('lectureId').value.trim() || null;
+                
+                if (!userId || !message) {
+                    alert('사용자 ID와 메시지를 모두 입력해주세요.');
+                    return;
+                }
+                
+                // 사용자 메시지 표시
+                addMessage('user', message);
+                document.getElementById('message').value = '';
+                
+                // 참조 문서 숨기기
+                document.getElementById('sources').style.display = 'none';
+                
+                // 타이핑 표시기 추가
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'bot-message';
+                botMessageDiv.id = 'currentBotMessage';
+                
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator';
+                typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+                
+                botMessageDiv.appendChild(typingIndicator);
+                // 맨 앞에 추가
+                document.getElementById('chatBox').insertBefore(botMessageDiv, document.getElementById('chatBox').firstChild);
+                
+                // POST 요청 데이터
+                const requestData = {
+                    userId: userId,
+                    message: message,
+                    lectureId: lectureId,
+                    conversationId: conversationId
+                };
+                
+                try {
+                    // fetch를 사용한 POST 요청
+                    const response = await fetch(`${BASE_URL}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'text/event-stream'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`서버 응답 오류: ${response.status}`);
+                    }
+                    
+                    // 응답 스트림 처리
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+                    let responseText = '';
+                    
+                    // 타이핑 표시기 제거
+                    const currentBotMessage = document.getElementById('currentBotMessage');
+                    if (currentBotMessage) {
+                        currentBotMessage.innerHTML = '';
+                    }
+                    
+                    // 스트림 읽기
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) {
+                            break;
+                        }
+                        
+                        // 버퍼에 추가
+                        buffer += decoder.decode(value, { stream: true });
+                        
+                        // 버퍼에서 완전한 이벤트 추출
+                        const lines = buffer.split('\n\n');
+                        buffer = lines.pop() || '';
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const eventData = JSON.parse(line.substring(6));
+                                    
+                                    // 이벤트 타입에 따른 처리
+                                    switch (eventData.type) {
+                                        case 'start':
+                                            conversationId = eventData.conversation_id;
+                                            break;
+                                            
+                                        case 'chunk':
+                                            // 첫 번째 청크인 경우
+                                            if (responseText === '') {
+                                                if (currentBotMessage) {
+                                                    currentBotMessage.textContent = eventData.content;
+                                                }
+                                            } else {
+                                                // 추가 청크
+                                                if (currentBotMessage) {
+                                                    currentBotMessage.textContent = responseText + eventData.content;
+                                                }
+                                            }
+                                            
+                                            responseText += eventData.content;
+                                            break;
+                                            
+                                        case 'sources':
+                                            if (eventData.sources && eventData.sources.length > 0) {
+                                                displaySources(eventData.sources);
+                                            }
+                                            break;
+                                            
+                                        case 'error':
+                                            // 오류 메시지 표시
+                                            if (currentBotMessage) {
+                                                currentBotMessage.textContent = '오류: ' + eventData.message;
+                                            }
+                                            break;
+                                    }
+                                } catch (e) {
+                                    console.error('JSON 파싱 오류:', e, line);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('채팅 요청 오류:', error);
+                    const currentBotMessage = document.getElementById('currentBotMessage');
+                    if (currentBotMessage) {
+                        currentBotMessage.textContent = '오류가 발생했습니다: ' + error.message;
+                    }
+                }
+            }
+            
+            // 메시지 추가 함수
+            function addMessage(type, content) {
+                const chatBox = document.getElementById('chatBox');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = type === 'user' ? 'user-message' : 'bot-message';
+                messageDiv.textContent = content;
+                
+                // 새로운 메시지를 맨 앞에 추가 (prepend)
+                chatBox.insertBefore(messageDiv, chatBox.firstChild);
+            }
+            
+            // 채팅창 스크롤 함수 - 역순 표시에서는 필요 없음
+            function scrollToBottom() {
+                // 역순 표시이므로 불필요
+            }
+            
+            // 참조 문서 표시 함수
+            function displaySources(sourcesData) {
+                const sources = document.getElementById('sources');
+                const sourcesList = document.getElementById('sourcesList');
+                
+                // 기존 내용 제거
+                sourcesList.innerHTML = '';
+                
+                // 참조 문서 추가
+                sourcesData.forEach((source, index) => {
+                    const sourceDiv = document.createElement('div');
+                    sourceDiv.style.marginBottom = '10px';
+                    
+                    const content = source.content.length > 150 
+                        ? source.content.substring(0, 150) + '...' 
+                        : source.content;
+                    
+                    let metadataText = '';
+                    if (source.metadata) {
+                        if (source.metadata.keywords) {
+                            metadataText += `키워드: ${source.metadata.keywords.join(', ')}`;
+                        }
+                        if (source.metadata.source) {
+                            metadataText += ` | 출처: ${source.metadata.source}`;
+                        }
+                    }
+                    
+                    sourceDiv.innerHTML = `
+                        <strong>참조 ${index + 1}</strong><br>
+                        ${content}<br>
+                        <small>${metadataText}</small>
+                    `;
+                    
+                    sourcesList.appendChild(sourceDiv);
+                });
+                
+                // 참조 문서 섹션 표시
+                sources.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

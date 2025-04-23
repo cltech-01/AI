@@ -10,6 +10,7 @@ from backend_api import create_backend_entity, notify_backend
 from data_processing import extract_audio_from_video, clean_text
 from chat import router as chat_router
 from video_stream import router as video_stream_router
+from data_processing import compress_video_to_h264
 
 
 
@@ -27,24 +28,26 @@ def process_video_background(save_path, user_key, random_name, filename):
     try:
         lecture_id = random_name
         # 2. ffmpeg으로 오디오 추출중  
-        notify_backend(lecture_id, "오디오 추출중", user_key)
+        notify_backend(lecture_id, "오디오 추출중")
         audio_path = extract_audio_from_video(save_path, user_key, random_name)
         
+        ## ffmpeg으로 hev로 영상 압축후 기존 영상 대체 
+        save_path = compress_video_to_h264(save_path)
         # 3. 오디오 stt로 변환 
-        notify_backend(lecture_id, "오디오 stt 변환중", user_key)
+        notify_backend(lecture_id, "오디오 stt 변환중")
         _, text_path = process_audio(audio_path, settings.WHISPER_MODEL_NAME, user_key)
 
         # 4. Text 파일 정제 
-        notify_backend(lecture_id, "Text 파일 정제중", user_key)
+        notify_backend(lecture_id, "Text 파일 정제중")
         cleaned_text_path = clean_text(text_path, user_key)
 
         # 5. Text 파일 vector Embedding 시작 
-        notify_backend(lecture_id, "Text 파일 vector Embedding 시작", user_key)
-        store_data(cleaned_text_path, user_key)
+        notify_backend(lecture_id, "Text 파일 vector Embedding 시작")
+        store_data(cleaned_text_path, user_key, lecture_id)
 
-        notify_backend(lecture_id, "완료", user_key)
+        notify_backend(lecture_id, "완료")
     except Exception as e:
-        notify_backend(lecture_id, f"오류: {str(e)}", user_key)
+        notify_backend(lecture_id, f"오류: {str(e)}")
         print(f"❌ 처리 중 오류 발생: {e}")
 
 @app.post("/upload")
