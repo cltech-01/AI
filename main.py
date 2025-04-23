@@ -37,24 +37,24 @@ def process_video_background(save_path, user_key, random_name, filename):
     try:
         lecture_id = random_name
         # 2. ffmpeg으로 오디오 추출중  
-        notify_backend(lecture_id, "오디오 추출중", user_key)
+        notify_backend(lecture_id, "오디오 추출중")
         audio_path = extract_audio_from_video(save_path, user_key, random_name)
         
         # 3. 오디오 stt로 변환 
-        notify_backend(lecture_id, "오디오 stt 변환중", user_key)
+        notify_backend(lecture_id, "오디오 stt 변환중")
         _, text_path = process_audio(audio_path, settings.WHISPER_MODEL_NAME, user_key)
 
         # 4. Text 파일 정제 
-        notify_backend(lecture_id, "Text 파일 정제중", user_key)
+        notify_backend(lecture_id, "Text 파일 정제중")
         cleaned_text_path = clean_text(text_path, user_key)
 
         # 5. Text 파일 vector Embedding 시작 
-        notify_backend(lecture_id, "Text 파일 vector Embedding 시작", user_key)
+        notify_backend(lecture_id, "Text 파일 vector Embedding 시작")
         store_data(cleaned_text_path, user_key)
 
-        notify_backend(lecture_id, "완료", user_key)
+        notify_backend(lecture_id, "완료")
     except Exception as e:
-        notify_backend(lecture_id, f"오류: {str(e)}", user_key)
+        notify_backend(lecture_id, f"오류: {str(e)}")
         print(f"❌ 처리 중 오류 발생: {e}")
 
 @app.post("/upload")
