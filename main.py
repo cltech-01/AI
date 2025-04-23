@@ -3,7 +3,7 @@ import uuid
 import shutil
 from config import Settings
 from stt import process_audio
-from embedding import vector_embedding
+from embedding import store_data
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, File, UploadFile, Form, BackgroundTasks
 from backend_api import create_backend_entity, notify_backend
@@ -38,7 +38,7 @@ def process_video_background(save_path, user_key, random_name, filename):
 
         # 5. Text 파일 vector Embedding 시작 
         notify_backend(lecture_id, "Text 파일 vector Embedding 시작", user_key)
-        vector_embedding(cleaned_text_path, user_key)
+        store_data(cleaned_text_path, user_key)
 
         notify_backend(lecture_id, "완료", user_key)
     except Exception as e:
@@ -89,8 +89,6 @@ async def upload_video(
             "status": "error",
             "message": str(e)
         })
-
-
 
 
 if __name__ == "__main__":
