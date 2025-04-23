@@ -160,3 +160,4 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         # 오류 발생 시
         yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
 
+

@@ -109,7 +109,7 @@ vector_store = QdrantVectorStore(
 
 #     return docs
 
-
+@measure_time
 def split_text_for_filtering(state: State):
     text_splitter_for_filtering = RecursiveCharacterTextSplitter(
         chunk_size=2000, # gpt가 효율적으로 처리 가능한 글자수
@@ -120,7 +120,7 @@ def split_text_for_filtering(state: State):
 
     return {"chunks": chunks}
 
-
+@measure_time
 def filter_small_talk(state: State):
     prompt = """
     다음은 IT 기술 강의입니다. 다음 내용에서 IT 기술과 관련없는 일상적인 대화나 불필요한 감탄사/웃음 등은 제거해주세요. 제거 후 요약하지 말고 원문 그대로 남겨주세요.:
@@ -139,7 +139,7 @@ def filter_small_talk(state: State):
 
     return {"text": result}
 
-
+@measure_time
 def summarize_text(state: State):
     prompt = f"""
     다음은 IT 기술 강의입니다. 강의를 1000자 내외로 요약해주세요.:
@@ -151,7 +151,7 @@ def summarize_text(state: State):
     # TODO: 백엔드 API 호출
     return {"summary": response.content}
 
-
+@measure_time
 def split_text_for_embedding(state: State):
     text_splitter_for_embedding = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -162,7 +162,7 @@ def split_text_for_embedding(state: State):
 
     return {"chunks": chunks}
 
-
+@measure_time
 def extract_keywords(state: State):
     prompt = """
     다음 강의 내용을 보고 중요한 기술 키워드나 주제를 3~5개 추출해주세요.

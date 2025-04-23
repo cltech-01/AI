@@ -1,6 +1,6 @@
 from embedding import vector_store, llm
 from langchain.chains import RetrievalQA
-
+from embedding import store_data
 
 # QA 시스템 구성
 def setup_qa_system(vector_store):
@@ -28,6 +28,7 @@ def answer_question(qa_chain, question):
 # 실행
 if __name__ == "__main__":
     print("🔧 QA 시스템 구성 중...")
+    vector_store = store_data("./reference/cleaned_example.txt", "jhkim")
     qa_chain = setup_qa_system(vector_store)
 
     print("📤 질문 보내기...")
