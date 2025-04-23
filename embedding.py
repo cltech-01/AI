@@ -27,6 +27,8 @@ llm = AzureChatOpenAI(
     openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
 )
 
+
+
 # ─── 클라이언트 초기화 ─────────────────────────────────────────────────────────
 embeddings = AzureOpenAIEmbeddings(
     model = AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME,
@@ -218,6 +220,7 @@ graph = builder.compile()
 
 
 # main에서 쓰는 method
+@measure_time
 def store_data(path: str, user_id: int):
     try:
         with open(path, "r", encoding="utf-8") as f:

@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from fastapi import FastAPI, File, UploadFile, Form, BackgroundTasks
 from backend_api import create_backend_entity, notify_backend
 from data_processing import extract_audio_from_video, clean_text
+from chat import router as chat_router
+from video_stream import router as video_stream_router
 
 
 
@@ -30,7 +32,7 @@ def process_video_background(save_path, user_key, random_name, filename):
         
         # 3. 오디오 stt로 변환 
         notify_backend(lecture_id, "오디오 stt 변환중", user_key)
-        _, text_path = process_audio(audio_path, settings.WHISPER_MODEL_NAME)
+        _, text_path = process_audio(audio_path, settings.WHISPER_MODEL_NAME, user_key)
 
         # 4. Text 파일 정제 
         notify_backend(lecture_id, "Text 파일 정제중", user_key)
@@ -49,11 +51,12 @@ def process_video_background(save_path, user_key, random_name, filename):
 async def upload_video(
     background_tasks: BackgroundTasks,  # 추가
     file: UploadFile = File(...),
-    user_key: str = Form(...),
+    userId: str = Form(...),
 ):
     try:
         # 프론트 -> AI 서버로 영상 보내는 부분 
-        user_dir = os.path.join(settings.UPLOAD_DIR, user_key)
+        user_id = userId
+        user_dir = os.path.join(settings.UPLOAD_DIR, user_id)
         os.makedirs(user_dir, exist_ok=True)
         ext = os.path.splitext(file.filename)[1]
         while True:
@@ -63,7 +66,7 @@ async def upload_video(
                 break
         
         # 1. 백엔드에다가 영상 엔티티 생성 요청
-        create_backend_entity(random_name, user_key, file.filename, "영상 업로드중")
+        create_backend_entity(random_name, user_id, file.filename, "영상 업로드중")
         with open(save_path, "wb") as f: 
             shutil.copyfileobj(file.file, f)
         print(f"✅ 영상 저장 완료: {save_path}")
@@ -72,7 +75,7 @@ async def upload_video(
         background_tasks.add_task(
             process_video_background, 
             save_path, 
-            user_key, 
+            user_id, 
             random_name,
             file.filename
         )
@@ -81,7 +84,7 @@ async def upload_video(
         return JSONResponse(status_code=200, content={
             "status": "success",
             "message": "영상이 성공적으로 업로드되었습니다. 처리가 백그라운드에서 진행됩니다.",
-            "task_id": random_name  # 클라이언트가 상태를 추적할 수 있는 ID
+            "video_id": random_name  # 클라이언트가 상태를 추적할 수 있는 ID
         })
 
     except Exception as e:
@@ -90,6 +93,9 @@ async def upload_video(
             "message": str(e)
         })
 
+# 라우터 등록
+app.include_router(chat_router)
+app.include_router(video_stream_router)
 
 if __name__ == "__main__":
     import uvicorn

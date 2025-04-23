@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 영상 및 채팅 테스트</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .video-section, .chat-section {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        video {
+            width: 100%;
+            border-radius: 4px;
+            background-color: #000;
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #e5e5ea;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        .sources-section {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .source-item {
+            background-color: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .typing {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #999;
+            margin-right: 5px;
+            animation: typing 1s infinite;
+        }
+        @keyframes typing {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <h1>AI 영상 및 채팅 테스트</h1>
+    
+    <div class="container">
+        <div class="video-section">
+            <h2>영상 스트리밍 테스트</h2>
+            <div class="form-group">
+                <label for="userId">사용자 ID</label>
+                <input type="text" id="userId" placeholder="예: jhkim">
+            </div>
+            <div class="form-group">
+                <label for="videoId">영상 ID (UUID)</label>
+                <input type="text" id="videoId" placeholder="예: 92b5a56c-b27e-43df-9c1f-b922ffa0032a">
+            </div>
+            <div class="form-group">
+                <button id="loadVideo">영상 로드</button>
+            </div>
+            <video id="videoPlayer" controls></video>
+        </div>
+        
+        <div class="chat-section">
+            <h2>채팅 테스트</h2>
+            <div class="form-group">
+                <label for="chatUserId">사용자 ID</label>
+                <input type="text" id="chatUserId" placeholder="예: jhkim">
+            </div>
+            <div class="form-group">
+                <label for="lectureId">강의 ID (선택사항)</label>
+                <input type="text" id="lectureId" placeholder="강의 ID를 입력하세요 (선택사항)">
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="메시지를 입력하세요">
+                <button id="sendMessage">전송</button>
+            </div>
+            <div class="sources-section" id="sources" style="display: none;">
+                <h3>참조 문서</h3>
+                <div id="sourcesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 서버 기본 URL
+            const BASE_URL = 'http://localhost:8001';
+            let conversationId = null;
+            let eventSource = null;
+            let fullResponse = '';
+
+            // 영상 로드 버튼 클릭 이벤트
+            document.getElementById('loadVideo').addEventListener('click', function() {
+                const userId = document.getElementById('userId').value.trim();
+                const videoId = document.getElementById('videoId').value.trim();
+                
+                if (!userId || !videoId) {
+                    alert('사용자 ID와 영상 ID를 모두 입력해주세요.');
+                    return;
+                }
+                
+                const videoUrl = `${BASE_URL}/stream/${userId}/${videoId}`;
+                const videoPlayer = document.getElementById('videoPlayer');
+                videoPlayer.src = videoUrl;
+                videoPlayer.load();
+            });
+
+            // 메시지 전송 버튼 클릭 이벤트
+            document.getElementById('sendMessage').addEventListener('click', sendChatMessage);
+            
+            // 엔터 키 눌렀을 때 메시지 전송
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+
+            // 채팅 메시지 전송 함수
+            function sendChatMessage() {
+                const userId = document.getElementById('chatUserId').value.trim();
+                const message = document.getElementById('messageInput').value.trim();
+                const lectureId = document.getElementById('lectureId').value.trim();
+                
+                if (!userId || !message) {
+                    alert('사용자 ID와 메시지를 모두 입력해주세요.');
+                    return;
+                }
+                
+                // 사용자 메시지 표시
+                appendMessage('user', message);
+                document.getElementById('messageInput').value = '';
+                
+                // 기존 응답 초기화
+                fullResponse = '';
+                
+                // 기존 이벤트 소스 연결 종료
+                if (eventSource) {
+                    eventSource.close();
+                }
+                
+                // 타이핑 표시기 추가
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'bot-message';
+                typingIndicator.id = 'typingIndicator';
+                typingIndicator.innerHTML = '<div class="typing"></div><div class="typing"></div><div class="typing"></div>';
+                document.getElementById('chatMessages').appendChild(typingIndicator);
+                scrollToBottom();
+                
+                // 참조 문서 섹션 숨기기
+                document.getElementById('sources').style.display = 'none';
+                
+                // 채팅 요청 데이터
+                const chatData = {
+                    userId: userId,
+                    message: message,
+                    conversationId: conversationId
+                };
+                
+                if (lectureId) {
+                    chatData.lectureId = lectureId;
+                }
+                
+                // 서버에 채팅 요청 (SSE)
+                eventSource = new EventSource(`${BASE_URL}/chat?` + new URLSearchParams({
+                    data: JSON.stringify(chatData)
+                }));
+                
+                // 이벤트 핸들러 등록
+                eventSource.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    
+                    // 이벤트 타입에 따른 처리
+                    switch (data.type) {
+                        case 'start':
+                            conversationId = data.conversation_id;
+                            break;
+                            
+                        case 'chunk':
+                            // 타이핑 표시기 제거하고 응답 표시
+                            if (fullResponse === '') {
+                                const typingIndicator = document.getElementById('typingIndicator');
+                                if (typingIndicator) {
+                                    typingIndicator.remove();
+                                }
+                                appendMessage('bot', data.content, true);
+                            } else {
+                                updateLastBotMessage(fullResponse + data.content);
+                            }
+                            fullResponse += data.content;
+                            break;
+                            
+                        case 'sources':
+                            // 참조 문서 표시
+                            if (data.sources && data.sources.length > 0) {
+                                displaySources(data.sources);
+                            }
+                            break;
+                            
+                        case 'end':
+                            // 이벤트 소스 연결 종료
+                            eventSource.close();
+                            break;
+                            
+                        case 'error':
+                            // 오류 메시지 표시
+                            alert('오류 발생: ' + data.message);
+                            eventSource.close();
+                            break;
+                    }
+                };
+                
+                eventSource.onerror = function(error) {
+                    console.error('EventSource 오류:', error);
+                    eventSource.close();
+                };
+            }
+
+            // 메시지 추가 함수
+            function appendMessage(type, content, isStream = false) {
+                const messagesContainer = document.getElementById('chatMessages');
+                const messageElement = document.createElement('div');
+                messageElement.className = type === 'user' ? 'user-message' : 'bot-message';
+                
+                if (isStream) {
+                    messageElement.id = 'currentBotMessage';
+                }
+                
+                messageElement.textContent = content;
+                messagesContainer.appendChild(messageElement);
+                scrollToBottom();
+            }
+
+            // 마지막 봇 메시지 업데이트 함수
+            function updateLastBotMessage(content) {
+                const currentMessage = document.getElementById('currentBotMessage');
+                if (currentMessage) {
+                    currentMessage.textContent = content;
+                    scrollToBottom();
+                }
+            }
+
+            // 채팅창 스크롤 함수
+            function scrollToBottom() {
+                const messagesContainer = document.getElementById('chatMessages');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // 참조 문서 표시 함수
+            function displaySources(sources) {
+                const sourcesSection = document.getElementById('sources');
+                const sourcesList = document.getElementById('sourcesList');
+                
+                // 기존 내용 제거
+                sourcesList.innerHTML = '';
+                
+                // 참조 문서 추가
+                sources.forEach((source, index) => {
+                    const sourceElement = document.createElement('div');
+                    sourceElement.className = 'source-item';
+                    
+                    // 내용 및 메타데이터 표시
+                    const content = source.content.length > 150 
+                        ? source.content.substring(0, 150) + '...' 
+                        : source.content;
+                    
+                    let metadataText = '';
+                    if (source.metadata) {
+                        if (source.metadata.keywords) {
+                            metadataText += `키워드: ${source.metadata.keywords.join(', ')}`;
+                        }
+                        if (source.metadata.source) {
+                            metadataText += ` | 출처: ${source.metadata.source}`;
+                        }
+                    }
+                    
+                    sourceElement.innerHTML = `
+                        <strong>참조 ${index + 1}</strong><br>
+                        ${content}<br>
+                        <small>${metadataText}</small>
+                    `;
+                    
+                    sourcesList.appendChild(sourceElement);
+                });
+                
+                // 참조 문서 섹션 표시
+                if (sources.length > 0) {
+                    sourcesSection.style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

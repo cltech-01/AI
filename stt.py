@@ -52,7 +52,7 @@ def transcribe_audio(audio_path: str, model_name: str) -> dict:
 
 
 @measure_time
-def process_audio(audio_path, model_name, parallel_threshold_mb=50, chunk_duration=120, username=None):
+def process_audio(audio_path, model_name, username):
     """
     오디오 파일을 CPU로 추론하기 (멀티프로세싱 없이)
     """
@@ -87,37 +87,28 @@ def process_audio(audio_path, model_name, parallel_threshold_mb=50, chunk_durati
 
 
 def save_transcription_results(audio_path, result, username=None):
-    """결과를 파일로 저장"""
-    path = Path(audio_path)
-    base_dir = path.parent
-    stem = path.stem
+    """결과를 Text/{username}에 저장"""
+    stem = Path(audio_path).stem
+    base_dir = Path(f"./Data/Text/{username}")
+    base_dir.mkdir(parents=True, exist_ok=True)
     
-    # 기본 텍스트 저장
+    # 텍스트 저장
     text_path = base_dir / f"{stem}_transcript.txt"
     with open(text_path, "w", encoding="utf-8") as f:
         f.write(result["text"])
     
-    # JSON 파일도 같은 디렉토리에 저장
+    # 세그먼트 저장
     json_path = base_dir / f"{stem}.json"
-    
-    # 세그먼트 데이터 JSON 형식으로 준비
-    segments_data = []
-    for segment in result["segments"]:
-        segments_data.append({
-            "start_time": segment["start"],
-            "end_time": segment["end"],
-            "text": segment["text"]
-        })
-    
-    # JSON 파일 저장
+    segments_data = [
+        {"start_time": s["start"], "end_time": s["end"], "text": s["text"]}
+        for s in result["segments"]
+    ]
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(segments_data, f, ensure_ascii=False, indent=2)
-    
+
     print(f"✅ 텍스트 저장 완료: {text_path}")
     print(f"✅ JSON 세그먼트 저장 완료: {json_path}")
-    print(f"🔤 텍스트 길이: {len(result['text'])} 글자")
-    print(f"📊 세그먼트 수: {len(result['segments'])} 개")
-    return [str(text_path),str(json_path)]
+    return [str(text_path), str(json_path)]
 
 if __name__ == "__main__":
     # 오디오 파일 처리 시작

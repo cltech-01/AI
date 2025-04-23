@@ -3,14 +3,14 @@ from config import settings
 
 # 백엔드 엔티티 생성 API 호출
 # task_id : file의 uuid임 
-def create_backend_entity(task_id: str, user_id: str, original_filename: str, status: str):
+def create_backend_entity(lecture_uuid: str, user_id: str, original_filename: str, status: str):
     try:
         # 백엔드 API 엔드포인트 (실제 운영 시 설정 필요)
         api_url = f"{settings.BACKEND_URL}/api/videos"
         
         # API 요청 데이터
         data = {
-            "taskId": task_id,
+            "taskId": lecture_uuid,
             "userId": user_id,
             "originalFilename": original_filename,
             "status": status
@@ -22,7 +22,7 @@ def create_backend_entity(task_id: str, user_id: str, original_filename: str, st
         
         # 백엔드가 없는 상황을 가정한 로그
         print(f"✅ 백엔드 엔티티 생성 요청 (시뮬레이션): {data}")
-        return {"id": task_id, "status": "created"}
+        return {"id": lecture_uuid, "status": "created"}
         
     except Exception as e:
         print(f"❌ 백엔드 엔티티 생성 실패: {e}")
