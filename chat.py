@@ -79,19 +79,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         )
         
         # 컬렉션 이름 결정
-        collection_name = f"lecture_{lecture_id}" if lecture_id else f"{user_id}_collection"
-        
-        # 컬렉션 존재 확인
-        collections = qdrant_client.get_collections().collections
-        collection_names = [collection.name for collection in collections]
-        
-        if collection_name not in collection_names:
-            # 컬렉션이 없으면 기본 컬렉션 fallback
-            collection_name = "meeting_summaries"
-            if collection_name not in collection_names:
-                yield f"data: {json.dumps({'type': 'chunk', 'content': '컬렉션을 찾을 수 없습니다. 데이터를 먼저 업로드해주세요.'}, ensure_ascii=False)}\n\n"
-                yield f"data: {json.dumps({'type': 'end'}, ensure_ascii=False)}\n\n"
-                return
+        collection_name = "meeting_summaries"
         
         # Azure OpenAI 임베딩 설정
         from langchain_openai import AzureOpenAIEmbeddings

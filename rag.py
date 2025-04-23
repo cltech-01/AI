@@ -29,7 +29,7 @@ def answer_question(qa_chain, question):
 if __name__ == "__main__":
     print("🔧 QA 시스템 구성 중...")
     vector_store = store_data("./reference/cleaned_example.txt", "jhkim")
-    qa_chain = setup_qa_system(vector_store)
+    # qa_chain = setup_qa_system(vector_store)
 
-    print("📤 질문 보내기...")
-    answer_question(qa_chain, "KT에서 CI/CD는 어떻게 처리해?")
+    # print("📤 질문 보내기...")
+    # answer_question(qa_chain, "KT에서 CI/CD는 어떻게 처리해?")
