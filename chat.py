@@ -105,7 +105,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         client=qdrant_client,
         collection_name=collection_name,
         embedding=embeddings,
-        retrieval_mode=RetrievalMode.HYBRIsD,
+        retrieval_mode=RetrievalMode.HYBRID,
         vector_name="default",
         sparse_vector_name="sparse"
     )
