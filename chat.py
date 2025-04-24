@@ -105,8 +105,9 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         client=qdrant_client,
         collection_name=collection_name,
         embedding=embeddings,
+        sparse_embedding=FastEmbedSparse(),
         retrieval_mode=RetrievalMode.HYBRID,
-        vector_name="default",
+        vector_name="dense",
         sparse_vector_name="sparse"
     )
     
@@ -136,9 +137,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         # 리트리버 설정
         retriever = vector_store.as_retriever(
             search_kwargs={
-                "similarity_top_k": 2,
-                "sparse_top_k": 12,
-                "vector_store_query_mode": "hybrid",
+                "k": 10,
                 "filter": qdrant_models.Filter(
                     must=[
                         qdrant_models.FieldCondition(

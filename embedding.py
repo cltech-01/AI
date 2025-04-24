@@ -12,6 +12,7 @@ from langgraph.graph import StateGraph, START, END
 from backend_api import send_summary_to_backend, send_cleantext_to_backend
 from langchain_text_splitters.konlpy import KonlpyTextSplitter
 from qdrant_client.http.exceptions import UnexpectedResponse
+from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 
 
 from typing import List
@@ -61,12 +62,13 @@ qdrant_client = QdrantClient("localhost", port=6333)
 try:
     qdrant_client.create_collection(
         collection_name="meeting_summaries",
-        vectors_config=
-            models.VectorParams(
+        vectors_config= {
+            "dense": models.VectorParams(
                 size=3072,
                 distance=models.Distance.COSINE,
                 on_disk=True
-            ),
+            )
+        },
         hnsw_config=models.HnswConfigDiff(
             m=32,
             ef_construct=128,
@@ -95,7 +97,11 @@ except UnexpectedResponse as e:
 vector_store = QdrantVectorStore(
     client=qdrant_client,
     collection_name="meeting_summaries",
-    embedding=embeddings
+    embedding=embeddings,
+    sparse_embedding=FastEmbedSparse(),
+    retrieval_mode=RetrievalMode.HYBRID,
+    vector_name="dense",
+    sparse_vector_name="sparse"
 )
 
 @measure_time
