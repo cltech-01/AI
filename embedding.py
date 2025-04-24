@@ -106,7 +106,6 @@ vector_store = QdrantVectorStore(
     embedding=embeddings
 )
 
-
 @measure_time
 def split_text_for_filtering(state: State):
     splitter = KonlpyTextSplitter(chunk_size=2000, chunk_overlap=0)
