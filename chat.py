@@ -13,6 +13,7 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from langchain.chains import RetrievalQA
 from embedding import embeddings
+from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 
 load_dotenv()
 
@@ -67,7 +68,7 @@ async def chat(request: ChatRequest = Body(...)):
         message = request.message
         lecture_id = request.lectureId
         conversation_id = request.conversationId or str(uuid.uuid4())
-        
+        print(lecture_id)
         # 스트리밍 응답 반환
         return StreamingResponse(
             stream_chat_response(user_id, message, lecture_id, conversation_id),
@@ -85,7 +86,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
     qdrant_client = QdrantClient("localhost", port=6333)
     
     # 컬렉션 이름 결정
-    collection_name = f"lecture_{lecture_id}" if lecture_id else f"{user_id}_collection"
+    collection_name = f"meeting_summaries"
     
     # 컬렉션 존재 확인
     collections = qdrant_client.get_collections().collections
@@ -100,10 +101,14 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
             return
     
     # 해당 컬렉션의 벡터스토어 생성
+    # 해당 컬렉션의 벡터스토어 생성
+    sparse_embeddings = FastEmbedSparse(model_name="Qdrant/BM25")
     vector_store = QdrantVectorStore(
         client=qdrant_client,
         collection_name=collection_name,
-        embedding=embeddings
+        embedding=embeddings,
+        sparse_embeddings=sparse_embeddings,
+        retrieval_mode=RetrievalMode.HYBRID
     )
     
     try:
@@ -132,10 +137,10 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         # 리트리버 설정
         retriever = vector_store.as_retriever(
             search_kwargs={"k": 10,
-                "filter": {
-                    "user_id": user_id,
-                    "lecture_id": lecture_id
-                }
+                # "filter": {
+                #     "user_id": user_id,  # 그냥 값으로 넣어야 함
+                #     "lecture_uuid": lecture_id
+                # }
             }
         )
 

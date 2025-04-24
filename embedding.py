@@ -11,6 +11,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from backend_api import send_summary_to_backend, send_cleantext_to_backend
 from langchain_text_splitters.konlpy import KonlpyTextSplitter
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 
 from typing import List
@@ -56,26 +57,33 @@ class State(TypedDict):
 # Qdrant 클라이언트 설정
 qdrant_client = QdrantClient("localhost", port=6333)
 
-qdrant_client.recreate_collection(
-    collection_name="meeting_summaries",
-    vectors_config=models.VectorParams(
-        size=3072,
-        distance=models.Distance.COSINE,
-        on_disk=True
-    ),
-    hnsw_config=models.HnswConfigDiff(
-        m=32,
-        ef_construct=128,
-    ),
-    quantization_config=models.ScalarQuantization(
-        scalar=models.ScalarQuantizationConfig(
-            type=models.ScalarType.INT8,
-            quantile=0.99,
-            always_ram=True,
+
+try:
+    qdrant_client.create_collection(
+        collection_name="meeting_summaries",
+        vectors_config=models.VectorParams(
+            size=3072,
+            distance=models.Distance.COSINE,
+            on_disk=True
+        ),
+        hnsw_config=models.HnswConfigDiff(
+            m=32,
+            ef_construct=128,
+        ),
+        quantization_config=models.ScalarQuantization(
+            scalar=models.ScalarQuantizationConfig(
+                type=models.ScalarType.INT8,
+                quantile=0.99,
+                always_ram=True,
+            )
         )
     )
-)
-
+    print("✅ Qdrant 컬렉션 생성 완료.")
+except UnexpectedResponse as e:
+    if "already exists" in str(e):
+        print("⚠️ Qdrant 컬렉션이 이미 존재합니다. 생성을 건너뜁니다.")
+    else:
+        raise e
 vector_store = QdrantVectorStore(
     client=qdrant_client,
     collection_name="meeting_summaries",
