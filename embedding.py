@@ -190,7 +190,7 @@ def split_text_for_embedding(state: State):
 @measure_time
 def extract_keywords(state: State):
     prompt = """
-    다음 강의 내용을 보고 중요한 기술 키워드나 주제를 3~5개 추출해주세요.
+    다음 강의 내용을 보고 중요한 기술 키워드나 주제를 5개 추출해주세요.
     단어로만 추출하고, 쉼표로 구분해주세요. 설명은 하지 마세요.
 
     """
@@ -207,7 +207,11 @@ def extract_keywords(state: State):
             metadata={
                 "chunk_index": i,
                 "user_id": state["user_id"],
-                "keywords": keywords,
+                "keyword1": keywords[0],
+                "keyword2": keywords[1],
+                "keyword3": keywords[2],
+                "keyword4": keywords[3],
+                "keyword5": keywords[4],
                 "lecture_uuid": state["lecture_uuid"]
             }
         )

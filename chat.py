@@ -10,9 +10,9 @@ from langchain.callbacks.base import BaseCallbackHandler
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient ,models as qdrant_models
+from qdrant_client import QdrantClient, models
 from langchain.chains import RetrievalQA
-from embedding import embeddings
+from embedding import embeddings, llm
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 
 load_dotenv()
@@ -83,22 +83,68 @@ async def chat(request: ChatRequest = Body(...)):
 
 async def stream_chat_response(user_id, message, lecture_id, conversation_id) -> AsyncGenerator[str, None]:
     # Qdrant 클라이언트 및 임베딩 모델 설정
+    find_keywords_prompt = f"""
+    아래 메세지에서 중요한 키워드 5개 이하로 뽑아주세요. 단어로만 추출하고, 쉼표로 구분해주세요. 설명은 하지 마세요.
+    메세지: {message}
+
+    응답:
+
+    """
+
+    response = llm.invoke(find_keywords_prompt)
+    keywords = [kw.strip() for kw in response.content.split(",")]
     qdrant_client = QdrantClient("localhost", port=6333)
-    
+    qdrant_client.scroll(
+        collection_name="meeting_summaries",
+        scroll_filter=models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="user_id",
+                    match=models.MatchValue(value=user_id),
+                ),
+                models.FieldCondition(
+                    key="lecture_uuid",
+                    match=models.MatchValue(value=lecture_id),
+                )
+            ],
+            should=[
+                models.FieldCondition(
+                    key="keyword1",
+                    match=models.MatchAny(any=keywords),
+                ),
+                models.FieldCondition(
+                    key="keyword2",
+                    match=models.MatchAny(any=keywords),
+                ),
+                models.FieldCondition(
+                    key="keyword3",
+                    match=models.MatchAny(any=keywords),
+                ),
+                models.FieldCondition(
+                    key="keyword4",
+                    match=models.MatchAny(any=keywords),
+                ),
+                models.FieldCondition(
+                    key="keyword5",
+                    match=models.MatchAny(any=keywords),
+                )
+            ]
+        ),
+    )
     # 컬렉션 이름 결정
     collection_name = "meeting_summaries"
     
-    # 컬렉션 존재 확인
-    collections = qdrant_client.get_collections().collections
-    collection_names = [collection.name for collection in collections]
+    # # 컬렉션 존재 확인
+    # collections = qdrant_client.get_collections().collections
+    # collection_names = [collection.name for collection in collections]
     
-    if collection_name not in collection_names:
-        # 컬렉션이 없으면 기본 컬렉션 fallback
-        collection_name = "meeting_summaries"
-        if collection_name not in collection_names:
-            yield f"data: {json.dumps({'type': 'chunk', 'content': '컬렉션을 찾을 수 없습니다. 데이터를 먼저 업로드해주세요.'}, ensure_ascii=False)}\n\n"
-            yield f"data: {json.dumps({'type': 'end'}, ensure_ascii=False)}\n\n"
-            return
+    # if collection_name not in collection_names:
+    #     # 컬렉션이 없으면 기본 컬렉션 fallback
+    #     collection_name = "meeting_summaries"
+    #     if collection_name not in collection_names:
+    #         yield f"data: {json.dumps({'type': 'chunk', 'content': '컬렉션을 찾을 수 없습니다. 데이터를 먼저 업로드해주세요.'}, ensure_ascii=False)}\n\n"
+    #         yield f"data: {json.dumps({'type': 'end'}, ensure_ascii=False)}\n\n"
+    #         return
     
     # 해당 컬렉션의 벡터스토어 생성
     vector_store = QdrantVectorStore(
@@ -110,6 +156,9 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         vector_name="dense",
         sparse_vector_name="sparse"
     )
+
+
+
     
     try:
         # 초기 응답 생성
@@ -137,19 +186,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         # 리트리버 설정
         retriever = vector_store.as_retriever(
             search_kwargs={
-                "k": 10,
-                "filter": qdrant_models.Filter(
-                    must=[
-                        qdrant_models.FieldCondition(
-                            key="metadata.user_id",
-                            match=qdrant_models.MatchValue(value=user_id)
-                        ),
-                        qdrant_models.FieldCondition(
-                            key="metadata.lecture_uuid",
-                            match=qdrant_models.MatchValue(value=lecture_id)
-                        )
-                    ]
-                )
+                "k": 10
             }
         )
 
