@@ -243,7 +243,7 @@ graph = builder.compile()
 
 # main에서 쓰는 method
 @measure_time
-def store_data(path: str, user_id: int, lecture_uuid: str):
+def store_data(path: str, user_id: str, lecture_uuid: str):
     try:
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
