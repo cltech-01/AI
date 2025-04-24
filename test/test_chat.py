@@ -5,12 +5,12 @@ import sys
 
 def test_chat_streaming():
     # API 엔드포인트 URL
-    url = "http://localhost:8001/chat"
+    url = "http://localhost:8000/chat"
     
     # 테스트 요청 데이터
     data = {
-        "userId": "jhkim",
-        "message": "이 강의는 어떤 내용을 다루나요?",
+        "userId": "1234337841",
+        "message": "KT의 CI/CD 도구에 대해서 알려줘",
         "lectureId": None,
         "conversationId": None
     }

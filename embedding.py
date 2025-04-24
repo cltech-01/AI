@@ -76,7 +76,14 @@ try:
                 quantile=0.99,
                 always_ram=True,
             )
-        )
+        ),
+        sparse_vectors_config={
+            "text-sparse": models.SparseVectorParams(
+                index=models.SparseIndexParams(
+                    on_disk=False,
+                )
+            )
+        },
     )
     print("✅ Qdrant 컬렉션 생성 완료.")
 except UnexpectedResponse as e:

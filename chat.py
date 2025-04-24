@@ -106,9 +106,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
     vector_store = QdrantVectorStore(
         client=qdrant_client,
         collection_name=collection_name,
-        embedding=embeddings,
-        sparse_embeddings=sparse_embeddings,
-        retrieval_mode=RetrievalMode.HYBRID
+        embedding=embeddings
     )
     
     try:
