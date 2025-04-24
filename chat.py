@@ -10,7 +10,7 @@ from langchain.callbacks.base import BaseCallbackHandler
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient ,models as qdrant_models
 from langchain.chains import RetrievalQA
 from embedding import embeddings
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
@@ -105,8 +105,9 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         client=qdrant_client,
         collection_name=collection_name,
         embedding=embeddings,
-        enable_hybrid = True , 
-        fastembed_sparse_model = "Qdrant/bm25"
+        retrieval_mode=RetrievalMode.HYBRIsD,
+        vector_name="default",
+        sparse_vector_name="sparse"
     )
     
     try:

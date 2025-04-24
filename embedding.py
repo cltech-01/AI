@@ -44,7 +44,7 @@ embeddings = AzureOpenAIEmbeddings(
 
 # state 정의
 class State(TypedDict):
-    user_id: int
+    user_id: str
     text: str
     summary: str
     chunks: list[str]
@@ -61,11 +61,12 @@ qdrant_client = QdrantClient("localhost", port=6333)
 try:
     qdrant_client.create_collection(
         collection_name="meeting_summaries",
-        vectors_config=models.VectorParams(
-            size=3072,
-            distance=models.Distance.COSINE,
-            on_disk=True
-        ),
+        vectors_config=
+            models.VectorParams(
+                size=3072,
+                distance=models.Distance.COSINE,
+                on_disk=True
+            ),
         hnsw_config=models.HnswConfigDiff(
             m=32,
             ef_construct=128,
@@ -78,7 +79,7 @@ try:
             )
         ),
         sparse_vectors_config={
-            "text-sparse": models.SparseVectorParams(
+            "sparse": models.SparseVectorParams(
                 index=models.SparseIndexParams(
                     on_disk=False,
                 )
