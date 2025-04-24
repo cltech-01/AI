@@ -86,7 +86,7 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
     qdrant_client = QdrantClient("localhost", port=6333)
     
     # 컬렉션 이름 결정
-    collection_name = f"meeting_summaries"
+    collection_name = "meeting_summaries"
     
     # 컬렉션 존재 확인
     collections = qdrant_client.get_collections().collections
@@ -101,12 +101,12 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
             return
     
     # 해당 컬렉션의 벡터스토어 생성
-    # 해당 컬렉션의 벡터스토어 생성
-    sparse_embeddings = FastEmbedSparse(model_name="Qdrant/BM25")
     vector_store = QdrantVectorStore(
         client=qdrant_client,
         collection_name=collection_name,
-        embedding=embeddings
+        embedding=embeddings,
+        enable_hybrid = True , 
+        fastembed_sparse_model = "Qdrant/bm25"
     )
     
     try:
@@ -134,11 +134,22 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         
         # 리트리버 설정
         retriever = vector_store.as_retriever(
-            search_kwargs={"k": 10,
-                # "filter": {
-                #     "user_id": user_id,  # 그냥 값으로 넣어야 함
-                #     "lecture_uuid": lecture_id
-                # }
+            search_kwargs={
+                "similarity_top_k": 2,
+                "sparse_top_k": 12,
+                "vector_store_query_mode": "hybrid",
+                "filter": qdrant_models.Filter(
+                    must=[
+                        qdrant_models.FieldCondition(
+                            key="metadata.user_id",
+                            match=qdrant_models.MatchValue(value=user_id)
+                        ),
+                        qdrant_models.FieldCondition(
+                            key="metadata.lecture_uuid",
+                            match=qdrant_models.MatchValue(value=lecture_id)
+                        )
+                    ]
+                )
             }
         )
 
