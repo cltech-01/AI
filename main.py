@@ -11,11 +11,19 @@ from data_processing import extract_audio_from_video, clean_text
 from chat import router as chat_router
 from video_stream import router as video_stream_router
 from data_processing import compress_video_to_h264
-
+from fastapi.middleware.cors import CORSMiddleware
 
 
 settings = Settings()
 app = FastAPI()
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 프론트 주소만 허용하고 싶으면 ["http://localhost:3000"] 이런 식으로
+    allow_credentials=True,
+    allow_methods=["*"],  # ["GET", "POST", "PUT", "DELETE"] 등도 가능
+    allow_headers=["*"],
+)
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
