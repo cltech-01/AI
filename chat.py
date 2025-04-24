@@ -130,7 +130,14 @@ async def stream_chat_response(user_id, message, lecture_id, conversation_id) ->
         )
         
         # 리트리버 설정
-        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        retriever = vector_store.as_retriever(
+            search_kwargs={"k": 10,
+                "filter": {
+                    "user_id": user_id,
+                    "lecture_id": lecture_id
+                }
+            }
+        )
 
         # Agentic 루프 (최대 2회까지만 재시도, 무한루프 방지)
         max_attempts = 2

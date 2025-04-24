@@ -11,12 +11,9 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from backend_api import send_summary_to_backend, send_cleantext_to_backend
 from langchain_text_splitters.konlpy import KonlpyTextSplitter
-from konlpy.tag import Okt
 
-import kss
+
 from typing import List
-okt = Okt()
-
 # ─── 환경 설정 ─────────────────────────────────────────────────────────────
 load_dotenv(override=True)
 
@@ -54,28 +51,7 @@ class State(TypedDict):
     lecture_uuid: str
     cleaned_text: str
 
-class KoreanSentenceSplitter:
-    def __init__(self, chunk_size: int = 2000, chunk_overlap: int = 0):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
 
-    def split_text(self, text: str) -> List[str]:
-        kss.set_morpheme_analyzer(okt)
-        sentences = kss.split_sentences(text)
-        chunks = []
-        current_chunk = ""
-        
-        for sentence in sentences:
-            if len(current_chunk) + len(sentence) <= self.chunk_size:
-                current_chunk += sentence + " "
-            else:
-                chunks.append(current_chunk.strip())
-                current_chunk = sentence + " "
-
-        if current_chunk:
-            chunks.append(current_chunk.strip())
-
-        return chunks
 
 # Qdrant 클라이언트 설정
 qdrant_client = QdrantClient("localhost", port=6333)
